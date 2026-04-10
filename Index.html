@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta, name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDA Inventory Pro - Sequence Scan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .scan-input { font-size: 24px !important; text-align: center; }
+        .step-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+        .step-done { background-color: #d1fae5 !important; color: #065f46 !important; border-color: #10b981 !important; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="max-w-lg mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+        <!-- Header -->
+        <div class="bg-indigo-700 p-4 text-white text-center">
+            <h1 class="text-lg font-bold">PDA INVENTORY PRO</h1>
+            <p class="text-xs opacity-80">Vị trí $\rightarrow$ Tag ID $\rightarrow$ Mã Hàng $\rightarrow$ Số Lượng</p>
+        </div>
+
+        <!-- Location Section -->
+        <div class="p-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-indigo-600 uppercase">Vị trí hiện tại:</span>
+                <span id="currentLocDisp" class="text-lg font-bold text-indigo-900">Chưa chọn</span>
+            </div>
+            <button onclick="resetLocation()" class="text-xs bg-white border border-indigo-200 px-2 py-1 rounded text-indigo-600 hover:bg-indigo-100">Đổi vị trí</button>
+        </div>
+
+        <!-- Workflow Stepper -->
+        <div class="p-4 bg-gray-100 border-b flex justify-between gap-2">
+            <div id="step1" class="flex-1 py-2 rounded-lg text-center text-xs font-bold border-2 border-gray-300 transition-all">1. Tag ID</div>
+            <div id="step2" class="flex-1 py-2 rounded-lg text-center text-xs font-bold border-2 border-gray-300 transition-all">2. Mã Hàng</div>
+            <div id="step3" class="flex-1 py-2 rounded-lg text-center text-xs font-bold border-2 border-gray-300 transition-all">3. Số Lượng</div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-6 space-y-4">
+            <div class="relative">
+                <label id="inputLabel" class="text-xs font-semibold text-indigo-500 uppercase ml-1">Đang chờ: QUÉT VỊ TRÍ</label>
+                <input type="text" id="barcodeInput" 
+                       class="scan-input w-full p-4 border-2 border-indigo-500 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all" 
+                       placeholder="Quét/Nhập tại đây..." autofocus>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btnExport" class="bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition active:scale-95 flex items-center justify-center gap-2">
+                    <span>📥</span> Xuất Excel
+                </button>
+                <button id="btnClear" class="bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition active:scale-95">
+                    🗑️ Xóa hết
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Preview -->
+        <div class="border-t border-gray-100 p-4 bg-gray-50">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-bold text-gray-600">Dữ liệu đã thu thập:</span>
+                <span id="count" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full font-bold">0 dòng</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="text-gray-400 border-b">
+                        <tr>
+                            <th class="py-2">Tag ID</th>
+                            <th class="py-2">Mã Hàng</th>
+                            <th class="py-2">SL</th>
+                            <th class="py-2 text-right">Vị Trí</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataList" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const barcodeInput = document.getElementById('barcodeInput');
+        const dataList = document.getElementById('dataList');
+        const countDisp = document.getElementById('count');
+        const locDisp = document.getElementById('currentLocDisp');
+        const inputLabel = document.getElementById('inputLabel');
+        
+        const s1 = document.getElementById('step1');
+        const s2 = document.getElementById('step2');
+        const s3 = document.getElementById('step3');
+
+        // States
+        let currentLoc = localStorage.getItem('pda_loc_pro') || '';
+        let currentStep = 'LOC'; // LOC -> TAG -> ITEM -> QTY
+        let tempRow = { tag: '', item: '', qty: '' };
+        let scannedData = JSON.parse(localStorage.getItem('pda_data_pro')) || [];
+
+        function updateUI() {
+            locDisp.innerText = currentLoc || 'Chưa chọn vị trí';
+            localStorage.setItem('pda_loc_pro', currentLoc);
+
+            // Cập nhật bảng
+            dataList.innerHTML = '';
+            scannedData.slice().reverse().forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="py-2">${row.tag}</td><td class="py-2">${row.item}</td><td class="py-2">${row.qty}</td><td class="py-2 text-right">${row.loc}</td>`;
+                dataList.appendChild(tr);
+            });
+            countDisp.innerText = `${scannedData.length} dòng`;
+            localStorage.setItem('pda_data_pro', JSON.stringify(scannedData));
+            updateStepper();
+        }
+
+        function updateStepper() {
+            // Reset styles
+            [s1, s2, s3].forEach(el => el.className = 'flex-1 py-2 rounded-lg text-center text-xs font-bold border-2 border-gray-300 transition-all');
+            
+            if (currentStep === 'TAG') {
+                inputLabel.innerText = "ĐANG CHỜ: QUÉT TAG ID";
+                s1.classList.add('step-active');
+            } else if (currentStep === 'ITEM') {
+                inputLabel.innerText = "ĐANG CHỜ: QUÉT MÃ HÀNG";
+                s1.classList.add('step-done');
+                s2.classList.add('step-active');
+            } else if (currentStep === 'QTY') {
+                inputLabel.innerText = "ĐANG CHỜ: NHẬP SỐ LƯỢNG";
+                s1.classList.add('step-done');
+                s2.classList.add('step-done');
+                s3.classList.add('step-active');
+            } else {
+                inputLabel.innerText = "ĐANG CHỜ: QUÉT VỊ TRÍ";
+            }
+        }
+
+        function resetLocation() {
+            currentLoc = '';
+            currentStep = 'LOC';
+            updateUI();
+        }
+
+        barcodeInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const val = barcodeInput.value.trim();
+                if (!val) return;
+
+                if (currentStep === 'LOC' || !currentLoc) {
+                    currentLoc = val;
+                    currentStep = 'TAG';
+                } else if (currentStep === 'TAG') {
+                    tempRow.tag = val;
+                    currentStep = 'ITEM';
+                } else if (currentStep === 'ITEM') {
+                    tempRow.item = val;
+                    currentStep = 'QTY';
+                } else if (currentStep === 'QTY') {
+                    tempRow.qty = val;
+                    // Lưu toàn bộ dòng vào data
+                    scannedData.push({
+                        tag: tempRow.tag,
+                        item: tempRow.item,
+                        qty: tempRow.qty,
+                        loc: currentLoc
+                    });
+                    // Reset về bước quét Tag cho món tiếp theo tại vị trí này
+                    tempRow = { tag: '', item: '', qty: '' };
+                    currentStep = 'TAG';
+                }
+
+                updateUI();
+                barcodeInput.value = ''; 
+            }
+        });
+
+        document.addEventListener('click', () => barcodeInput.focus());
+
+        document.getElementById('btnExport').addEventListener('click', () => {
+            if (scannedData.length === 0) {
+                alert('Chưa có dữ liệu!');
+                return;
+            }
+            // Cột A: Tag ID, Cột B: Vị Trí, Cột C: Mã Hàng, Cột D: Số Lượng
+            const ws_data = [
+                ["Tag ID", "Vị Trí", "Mã Hàng", "Số Lượng"], 
+                ...scannedData.map(item => [item.tag, item.loc, item.item, item.qty])
+            ];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "InventoryData");
+            XLSX.writeFile(wb, `Inventory_Full_${new Date().getTime()}.xlsx`);
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            if (confirm('Xóa toàn bộ dữ liệu?')) {
+                scannedData = [];
+                currentLoc = '';
+                currentStep = 'LOC';
+                tempRow = { tag: '', item: '', qty: '' };
+                updateUI();
+            }
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
