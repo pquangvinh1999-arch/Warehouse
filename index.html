@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDA Inventory Pro - Multi Device</title>
+    <title>PDA Inventory Pro - Fixed Focus</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
             <p class="text-xs opacity-80">Vị trí $\rightarrow$ Tag ID $\rightarrow$ Mã Hàng $\rightarrow$ Số Lượng</p>
         </div>
 
-        <!-- MACHINE SETTINGS SECTION (Cập nhật mới) -->
+        <!-- Machine Settings -->
         <div class="p-4 bg-gray-50 border-b border-gray-200">
             <div class="flex items-center justify-between gap-3">
                 <div class="flex-1">
@@ -114,7 +114,6 @@
         let tempRow = { tag: '', item: '', qty: '' };
         let scannedData = JSON.parse(localStorage.getItem('pda_data_pro')) || [];
 
-        // KHỞI TẠO TÊN MÁY TỪ LOCALSTORAGE
         window.onload = function() {
             const savedName = localStorage.getItem('pda_machine_name');
             if (savedName) {
@@ -123,7 +122,6 @@
             updateUI();
         };
 
-        // HÀM LƯU TÊN MÁY
         function saveMachineName() {
             const name = machineInput.value.trim();
             if (name) {
@@ -144,7 +142,7 @@
                 dataList.appendChild(tr);
             });
             countDisp.innerText = `${scannedData.length} dòng`;
-            localStorage.setItem('pda_//data_pro', JSON.stringify(scannedData));
+            localStorage.setItem('pda_data_pro', JSON.stringify(scannedData));
             updateStepper();
         }
 
@@ -194,7 +192,7 @@
                         item: tempRow.item,
                         qty: tempRow.qty,
                         loc: currentLoc,
-                        machine: machineInput.value || 'Unknown' // LẤY TÊN MÁY HIỆN TẠI
+                        machine: machineInput.value || 'Unknown'
                     });
                     tempRow = { tag: '', item: '', qty: '' };
                     currentStep = 'TAG';
@@ -204,7 +202,14 @@
             }
         });
 
-        document.addEventListener('click', () => barcodeInput.focus());
+        // SỬA LỖI FOCUS: Chỉ nhảy về ô quét nếu KHÔNG click vào ô nhập liệu khác
+        document.addEventListener('click', (e) => {
+            // Nếu người dùng click vào ô nhập tên máy hoặc nút Lưu, không ép focus về ô quét
+            if (e.target.id === 'machineName' || e.target.tagName === 'BUTTON') {
+                return; 
+            }
+            barcodeInput.focus();
+        });
 
         document.getElementById('btnExport').addEventListener('click', async () => {
             if (scannedData.length === 0) {
@@ -212,7 +217,6 @@
                 return;
             }
 
-            // THAY LINK GOOGLE SCRIPT CỦA ANH VÀO ĐÂY
             const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbzPYix88CwPxDwBNY_5mTAtQJ3_6Pck6mWjfmT8kQtd5bO4humDOs3AUty4vs_4ksjzWA/exec'; 
 
             const btn = document.getElementById('btnExport');
@@ -228,7 +232,7 @@
                     body: JSON.stringify(scannedData)
                 });
 
-                alert('✅ ĐỒNG BỘ THÀNH CÔNG!\nDữ liệu đã được ghi vào Google Sheet.');
+                alert('✅ ĐỒNG BỘ THÀNH CÔNG!');
                 if (confirm('Đồng bộ thành công. Anh có muốn xóa dữ liệu trên PDA không?')) {
                     scannedData = [];
                     updateUI();
