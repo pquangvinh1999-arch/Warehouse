@@ -20,7 +20,7 @@
 <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col p-4">
     <div class="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-4 flex justify-between items-center">
         <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white">WHM PRO - ÁNH XẠ</h1>
+            <h1 class="text-xl font-extrabold tracking-tight text-white">WHM PRO BY VINH</h1>
             <p class="text-[10px] opacity-80 uppercase font-semibold">Vinh Enterprise | {{ currentTime }}</p>
         </div>
         <div class="text-right">
@@ -31,14 +31,14 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4 mb-4">
         <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bước 1: Vị trí ánh xạ (Bin)</label>
+            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bước 1: Vị trí (Bin)</label>
             <input v-model="form.loc" ref="locInput" @keyup.enter="$refs.tagInput.focus()"
                    class="w-full mt-1 p-4 bg-slate-50 border-2 border-slate-100 rounded-xl text-center text-2xl font-bold text-indigo-600 outline-none transition-all input-focus"
                    placeholder="Quét Vị Trí...">
         </div>
 
         <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bước 2: Quét Tag ID liên tục</label>
+            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Bước 2: Quét Tag ID </label>
             <input v-model="form.tag" ref="tagInput" @keyup.enter="quickAdd"
                    class="w-full mt-1 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-xl text-center text-xl font-bold text-slate-700 outline-none transition-all input-focus"
                    placeholder="Quét Tag ID tại đây...">
@@ -50,7 +50,7 @@
             </button>
             <button @click="syncCloud" :disabled="isSyncing || queue.length === 0" 
                     class="bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
-                {{ isSyncing ? '... Đang đẩy' : '☁️ Đồng bộ Cloud' }}
+                {{ isSyncing ? '... Đang trích xuất dữ liệu' : '☁️ Đồng bộ Cloud' }}
             </button>
         </div>
     </div>
@@ -117,7 +117,7 @@
                 const tagVal = form.value.tag.trim();
 
                 if (!locVal) {
-                    alert("⚠️ Anh cần quét Vị trí trước!");
+                    alert("⚠️ Cần quét Vị trí trước!");
                     locInput.value.focus();
                     return;
                 }
@@ -151,7 +151,7 @@
                     queue.value = [];
                     saveLocal();
                 } catch (e) {
-                    alert("❌ Lỗi mạng, anh kiểm tra lại nhé!");
+                    alert("❌ Lỗi mạng, kiểm tra lại nhé!");
                 } finally {
                     isSyncing.value = false;
                 }
