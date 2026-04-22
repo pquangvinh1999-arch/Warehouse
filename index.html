@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WHM PRO - VINH ENTERPRISE</title>
+    <title>WHMFG PRO - By Vinh</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
@@ -20,7 +20,7 @@
 <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col p-4">
     <div class="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-4 flex justify-between items-center">
         <div>
-            <h1 class="text-xl font-extrabold tracking-tight">WHM PRO By Vinh</h1>
+            <h1 class="text-xl font-extrabold tracking-tight">WHMFG PRO ENTERPRISE</h1>
             <p class="text-[10px] opacity-80 uppercase font-semibold">PDA BIN MAPPING | {{ currentTime }}</p>
         </div>
         <div class="text-right">
@@ -44,13 +44,14 @@
                    placeholder="Quét Tag ID tại đây...">
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
-            <button @click="exportExcel" class="bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
-                📥 Xuất Excel
-            </button>
+        <div class="pt-2">
             <button @click="syncCloud" :disabled="isSyncing || queue.length === 0" 
-                    class="bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all disabled:opacity-50">
-                {{ isSyncing ? '... Đang đẩy dữ liệu' : '🚀 Đồng bộ Cloud' }}
+                    class="w-full bg-indigo-600 text-white py-4 rounded-xl font-extrabold text-lg shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+                <span v-if="!isSyncing">🚀 ĐỒNG BỘ CLOUD</span>
+                <span v-else class="flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    ĐANG ĐẨY DỮ LIỆU...
+                </span>
             </button>
         </div>
     </div>
@@ -101,7 +102,6 @@
             const locInput = ref(null);
             const tagInput = ref(null);
 
-            // ✅ ĐÃ CẬP NHẬT LINK WEB APP CỦA ANH
             const CLOUD_API = 'https://script.google.com/macros/s/AKfycbwc6E8tk3IFSliy_Zs0JEePHheEso5cTDcNzNg9bHVtaoz-c9U7dhSHXr317vlFpp9q3w/exec';
 
             const queueReversed = computed(() => [...queue.value].reverse());
@@ -131,7 +131,6 @@
             const syncCloud = async () => {
                 isSyncing.value = true;
                 try {
-                    // Gửi dữ liệu theo đúng cấu trúc App Script yêu cầu
                     const payload = { 
                         data: queue.value.map(i => ({
                             tagID: i.tag,
@@ -165,12 +164,6 @@
                 if (newVal) { item.tag = newVal.trim(); saveLocal(); }
             };
             const clearAll = () => { if(confirm('Xóa hết hàng chờ?')) { queue.value = []; saveLocal(); }};
-            const exportExcel = () => {
-                const ws = XLSX.utils.json_to_sheet(queue.value.map(i => ({ "Tag ID": i.tag, "Bin": i.loc, "Thời gian": i.time })));
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Data");
-                XLSX.writeFile(wb, `WHM_Mapping_${Date.now()}.xlsx`);
-            };
 
             onMounted(() => {
                 updateTime();
@@ -178,7 +171,7 @@
                 locInput.value.focus();
             });
 
-            return { queue, form, queueReversed, isSyncing, currentTime, locInput, tagInput, handleScan, syncCloud, deleteItem, editItem, clearAll, exportExcel };
+            return { queue, form, queueReversed, isSyncing, currentTime, locInput, tagInput, handleScan, syncCloud, deleteItem, editItem, clearAll };
         }
     }).mount('#app');
 </script>
