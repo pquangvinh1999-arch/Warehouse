@@ -18,17 +18,19 @@
 <body>
 
 <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col p-4">
+    <!-- Header -->
     <div class="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-4 flex justify-between items-center">
         <div>
             <h1 class="text-xl font-extrabold tracking-tight">WHMFG PRO ENTERPRISE</h1>
             <p class="text-[10px] opacity-80 uppercase font-semibold">PDA BIN MAPPING | {{ currentTime }}</p>
         </div>
         <div class="text-right">
-            <p class="text-3xl font-black">{{ queue.length }}</p>
+            <p class="text-3xl font-black">0</p>
             <p class="text-[10px] uppercase">Tags ID chờ </p>
         </div>
     </div>
 
+    <!-- Input Section -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4 mb-4">
         <div>
             <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">1. Vị trí (Bin)</label>
@@ -56,6 +58,7 @@
         </div>
     </div>
 
+    <!-- Queue Section -->
     <div class="flex-1 overflow-hidden flex flex-col">
         <div class="flex justify-between items-center mb-2 px-2">
             <h3 class="text-xs font-bold text-slate-500 uppercase">Hàng chờ (Mới nhất trên cùng)</h3>
@@ -95,19 +98,26 @@
 
     createApp({
         setup() {
-            const queue = ref(JSON.parse(localStorage.getItem('Vinh_WHM_Mapping')) || []);
+            // Thống nhất một key lưu trữ LocalStorage
+            const STORAGE_KEY = 'WHMFG_PRO_MAPPING';
+            const queue = ref(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []);
             const form = ref({ loc: '', tag: '' });
             const isSyncing = ref(false);
             const currentTime = ref('');
             const locInput = ref(null);
             const tagInput = ref(null);
 
+            // LINK WEB APP CỦA ANH
             const CLOUD_API = 'https://script.google.com/macros/s/AKfycbx5v92wUPD4h-CuvuOtr0vmcUV-PVD-lD11BnLRxtQV8b-PRi_W2nMO198D3v-z9M9f/exec';
 
             const queueReversed = computed(() => [...queue.value].reverse());
 
             const updateTime = () => {
                 currentTime.value = new Date().toLocaleTimeString('vi-VN');
+            };
+
+            const saveLocal = () => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(queue.value));
             };
 
             const handleScan = () => {
@@ -127,60 +137,77 @@
                 saveLocal();
                 tagInput.value.focus();
             };
-const syncCloud = async () => {
-    isSyncing.value = true;
-    try {
-        const payload = { 
-            data: queue.value.map(i => ({
-                tagID: i.tag,
-                bin: i.loc,
-                thoiGian: i.time 
-            }))
-        };
 
-        // BỎ mode: 'no-cors' để có thể nhận phản hồi từ Server
-        const response = await fetch(CLOUD_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Dùng text/plain để tránh lỗi CORS của Google
-            body: JSON.stringify(payload)
-        });
+            const syncCloud = async () => {
+                isSyncing.value = true;
+                try {
+                    const payload = { 
+                        data: queue.value.map(i => ({
+                            tagID: i.tag,
+                            bin: i.loc,
+                            thoiGian: i.time 
+                        }))
+                    };
 
-        const result = await response.json();
-        
-        if (result.result && result.result.includes("thành công")) {
-            alert("🚀 " + result.result);
-            queue.value = [];
-            saveLocal();
-        } else {
-            alert("⚠️ Server báo lỗi: " + result.result);
-        }
-    } catch (e) {
-        console.error(e);
-        alert("❌ Lỗi kết nối: " + e.message + ". Hãy kiểm tra lại Deploy Web App!");
-    } finally {
-        isSyncing.value = false;
-    }
-};
+                    const response = await fetch(CLOUD_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.result && result.result.includes("thành công")) {
+                        alert("🚀 " + result.result);
+                        queue.value = [];
+                        saveLocal();
+                    } else {
+                        alert("⚠️ Server báo lỗi: " + (result.result || "Không xác định"));
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("❌ Lỗi kết nối: " + e.message + ". Hãy kiểm tra lại Deploy Web App!");
+                } finally {
                     isSyncing.value = false;
                 }
             };
 
-            const saveLocal = () => localStorage.setItem('WHMFG_Mapping', JSON.stringify(queue.value));
-            const deleteItem = (id) => { queue.value = queue.value.filter(i => i.id !== id); saveLocal(); };
+            const deleteItem = (id) => { 
+                queue.value = queue.value.filter(i => i.id !== id); 
+                saveLocal(); 
+            };
+
             const editItem = (id) => {
                 const item = queue.value.find(i => i.id === id);
+                if (!item) return;
                 const newVal = prompt("Sửa lại Tag ID:", item.tag);
-                if (newVal) { item.tag = newVal.trim(); saveLocal(); }
+                if (newVal !== null) { 
+                    item.tag = newVal.trim(); 
+                    saveLocal(); 
+                }
             };
-            const clearAll = () => { if(confirm('Xóa hết hàng chờ?')) { queue.value = []; saveLocal(); }};
+
+            const clearAll = () => { 
+                if(confirm('Xóa hết hàng chờ?')) { 
+                    queue.value = []; 
+                    saveLocal(); 
+                }
+            };
 
             onMounted(() => {
                 updateTime();
                 setInterval(updateTime, 1000);
-                locInput.value.focus();
+                // Focus vào ô Vị trí khi vừa mở web
+                setTimeout(() => {
+                    if(locInput.value) locInput.value.focus();
+                }, 500);
             });
 
-            return { queue, form, queueReversed, isSyncing, currentTime, locInput, tagInput, handleScan, syncCloud, deleteItem, editItem, clearAll };
+            return { 
+                queue, form, queueReversed, isSyncing, currentTime, 
+                locInput, tagInput, handleScan, syncCloud, 
+                deleteItem, editItem, clearAll 
+            };
         }
     }).mount('#app');
 </script>
