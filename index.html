@@ -45,7 +45,6 @@
 <body class="p-4">
 
 <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col">
-    <!-- Header: High-End Gradient -->
     <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[2rem] p-7 text-white shadow-2xl mb-8 relative overflow-hidden">
         <div class="relative z-10 flex justify-between items-center">
             <div>
@@ -62,14 +61,11 @@
                 </div>
             </div>
         </div>
-        <!-- Decorative Elements -->
         <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
         <div class="absolute -left-12 -top-12 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
     </div>
 
-    <!-- Main Scanner Hub -->
     <div class="glass-panel rounded-[2.5rem] p-8 space-y-8 mb-8">
-        <!-- Location Section -->
         <div class="space-y-3">
             <div class="flex justify-between items-end">
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">📍 Vị trí (Bin)</label>
@@ -81,7 +77,6 @@
                    @keyup.enter="onLocationEnter">
         </div>
 
-        <!-- Tag Section -->
         <div class="space-y-3">
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">🏷️ Quét Tag ID</label>
             <div class="relative">
@@ -89,12 +84,10 @@
                        class="w-full p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-center text-2xl font-black text-indigo-700 outline-none transition-all input-enterprise placeholder:text-indigo-300" 
                        placeholder="Quét Tag ID tại đây..."
                        @keyup.enter="onTagEnter">
-                <!-- Focus Indicator -->
                 <div v-if="activeInput === 'tag'" class="absolute -top-1 -right-1 w-3 h-3 bg-indigo-600 rounded-full animate-ping"></div>
             </div>
         </div>
 
-        <!-- Sync Action -->
         <div class="pt-4">
             <button @click="syncCloud" :disabled="isSyncing || scannedData.length === 0" 
                     class="btn-push w-full btn-gradient text-white py-5 rounded-2xl font-extrabold text-xl shadow-xl hover:shadow-indigo-200 transition-all disabled:opacity-50 flex items-center justify-center gap-3">
@@ -112,7 +105,6 @@
         </div>
     </div>
 
-    <!-- Data Preview -->
     <div class="flex-1 flex flex-col">
         <div class="flex justify-between items-center mb-4 px-2">
             <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Queue Mapping</h3>
@@ -172,7 +164,6 @@
                 currentTime.value = new Date().toLocaleTimeString('vi-VN');
             };
 
-            // Xử lý khi nhấn Enter ở ô Vị trí
             const onLocationEnter = () => {
                 const val = currentLocation.value.trim();
                 if (!val) return;
@@ -182,7 +173,6 @@
                 nextTick(() => tagInput.value.focus());
             };
 
-            // Xử lý khi nhấn Enter ở ô Tag
             const onTagEnter = () => {
                 const val = currentTag.value.trim();
                 if (!val) return;
@@ -204,7 +194,6 @@
                 localStorage.setItem('pda_mapping_data', JSON.stringify(scannedData.value));
                 currentTag.value = ''; 
                 
-                // Giữ focus ở ô Tag để quét liên tục nhiều Tag cho cùng 1 vị trí
                 nextTick(() => tagInput.value.focus());
             };
 
@@ -212,6 +201,7 @@
                 isSyncing.value = true;
                 try {
                     const payload = { 
+                        action: "receive", // <-- Cờ báo hiệu lệnh NHẬP KHO
                         data: scannedData.value.map(i => ({
                             tagID: i.tag,
                             bin: i.loc,
@@ -267,12 +257,10 @@
             onMounted(() => {
                 updateTime();
                 setInterval(updateTime, 1000);
-                // Mặc định focus vào vị trí khi khởi động
                 setTimeout(() => {
                     activeInput.value = 'loc';
                     locInput.value.focus();
                 }, 500);
-                // Luôn focus lại vào input khi click ra ngoài
                 document.addEventListener('click', () => {
                     if(activeInput.value === 'loc') locInput.value.focus();
                     else tagInput.value.focus();
