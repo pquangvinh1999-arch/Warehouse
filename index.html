@@ -72,6 +72,7 @@
                 <span v-if="currentLocation !== 'Chưa chọn vị trí'" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Đang khóa</span>
             </div>
             <input type="text" ref="locInput" v-model="currentLocation"
+                   @focus="activeInput = 'loc'"
                    class="w-full p-5 bg-white border-2 border-slate-100 rounded-2xl text-center text-2xl font-black text-slate-800 outline-none transition-all input-enterprise placeholder:text-slate-300" 
                    placeholder="Quét Vị Trí..."
                    @keyup.enter="onLocationEnter">
@@ -81,6 +82,7 @@
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">🏷️ Quét Tag ID</label>
             <div class="relative">
                 <input type="text" ref="tagInput" v-model="currentTag"
+                       @focus="activeInput = 'tag'"
                        class="w-full p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-center text-2xl font-black text-indigo-700 outline-none transition-all input-enterprise placeholder:text-indigo-300" 
                        placeholder="Quét Tag ID tại đây..."
                        @keyup.enter="onTagEnter">
@@ -201,7 +203,7 @@
                 isSyncing.value = true;
                 try {
                     const payload = { 
-                        action: "receive", // <-- Cờ báo hiệu lệnh NHẬP KHO
+                        action: "receive", 
                         data: scannedData.value.map(i => ({
                             tagID: i.tag,
                             bin: i.loc,
@@ -261,10 +263,7 @@
                     activeInput.value = 'loc';
                     locInput.value.focus();
                 }, 500);
-                document.addEventListener('click', () => {
-                    if(activeInput.value === 'loc') locInput.value.focus();
-                    else tagInput.value.focus();
-                });
+                // Đã loại bỏ document.addEventListener('click') để anh có thể tự do click sửa vị trí
             });
 
             return { 
